@@ -6,13 +6,27 @@ import json
 
 app = Flask(__name__)
 
-# Load the trained model (default to random forest)
+# Load the trained model (trying multiple model files)
 current_dir = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(current_dir, 'models/prahar_random_forest_model.pkl')
-if os.path.exists(model_path):
-    model = joblib.load(model_path)
-else:
-    model = None
+
+# List of model files to try in order of preference
+model_files = [
+    'models/prahar_random_forest_model.pkl',  # Original model
+    'models/prahar_best_model.pkl',          # Rule-based model
+]
+
+# Try loading models in order until one succeeds
+model = None
+for model_file in model_files:
+    try:
+        model_path = os.path.join(current_dir, model_file)
+        if os.path.exists(model_path):
+            model = joblib.load(model_path)
+            print(f"Loaded model from {model_path}")
+            break
+    except Exception as e:
+        print(f"Could not load model from {model_path}: {e}")
+        continue
 
 # Prahar descriptions with traditional names
 PRAHAR_INFO = {
@@ -116,18 +130,83 @@ def quiz_data():
         'questions': QUIZ_QUESTIONS
     })
 
+# Fallback rule-based model implementation
+class FallbackRuleBasedModel:
+    """A rule-based model that directly implements the mapping of question answers to Prahars"""
+    
+    def __init__(self):
+        # Define the mapping of question answers to Prahars
+        # Odd-numbered questions: A→P1, B→P2, C→P3, D→P4
+        # Even-numbered questions: A→P5, B→P6, C→P7, D→P8
+        self.question_prahar_mapping = {
+            # Question number (1-indexed): {answer option (0-3): prahar number (1-8)}
+            1: {0: 1, 1: 2, 2: 3, 3: 4},
+            2: {0: 5, 1: 6, 2: 7, 3: 8},
+            3: {0: 1, 1: 2, 2: 3, 3: 4},
+            4: {0: 5, 1: 6, 2: 7, 3: 8},
+            5: {0: 1, 1: 2, 2: 3, 3: 4},
+            6: {0: 5, 1: 6, 2: 7, 3: 8},
+            7: {0: 1, 1: 2, 2: 3, 3: 4},
+            8: {0: 5, 1: 6, 2: 7, 3: 8},
+            9: {0: 1, 1: 2, 2: 3, 3: 4},
+            10: {0: 5, 1: 6, 2: 7, 3: 8},
+        }
+    
+    def predict(self, X):
+        """Predict the Prahar based on the answers to the 10 questions"""
+        # Convert to numpy array if it's a list
+        if isinstance(X, list):
+            X = np.array(X).reshape(1, -1)
+        
+        # Initialize predictions array
+        n_samples = X.shape[0]
+        predictions = np.zeros(n_samples, dtype=int)
+        
+        # For each sample, count the occurrences of each Prahar
+        for i in range(n_samples):
+            # Count occurrences of each Prahar
+            prahar_counts = {p: 0 for p in range(1, 9)}
+            
+            # Go through each question and increment the count for the corresponding Prahar
+            for q in range(10):
+                q_num = q + 1  # Convert to 1-indexed
+                answer = X[i, q]
+                
+                # Handle both numeric and letter inputs
+                if isinstance(answer, str) and answer in ['A', 'B', 'C', 'D']:
+                    answer = ord(answer) - ord('A')  # Convert A->0, B->1, etc.
+                
+                # Get the Prahar for this question and answer
+                prahar = self.question_prahar_mapping[q_num][answer]
+                prahar_counts[prahar] += 1
+            
+            # Find the Prahar with the highest count
+            predictions[i] = max(prahar_counts, key=prahar_counts.get)
+        
+        return predictions
+
 @app.route('/predict', methods=['POST'])
 def predict():
     """Predict Prahar based on quiz answers"""
-    # If model not loaded, try loading again
+    # If model not loaded, create a fallback rule-based model
     global model
     if model is None:
         try:
-            model = joblib.load(model_path)
+            # Try loading the model one more time
+            for model_file in model_files:
+                model_path = os.path.join(current_dir, model_file)
+                if os.path.exists(model_path):
+                    model = joblib.load(model_path)
+                    print(f"Loaded model from {model_path}")
+                    break
+            
+            # If still no model, use the fallback
+            if model is None:
+                print("Using fallback rule-based model")
+                model = FallbackRuleBasedModel()
         except Exception as e:
-            return jsonify({
-                'error': f'Model not found. Please train the model first. Error: {str(e)}'
-            }), 500
+            print(f"Error loading model, using fallback: {e}")
+            model = FallbackRuleBasedModel()
     
     # Get quiz answers from request
     data = request.get_json()
@@ -164,5 +243,5 @@ def predict():
 
 if __name__ == '__main__':
     # Use PORT environment variable if available (for cloud deployment)
-    port = int(os.environ.get('PORT', 5001))
+    port = int(os.environ.get('PORT', 5005))
     app.run(debug=True, port=port, host='0.0.0.0') 
