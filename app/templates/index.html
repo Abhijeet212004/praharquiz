@@ -412,23 +412,24 @@
             
             let sunTopPosition, sunLeftPosition;
             
-            // Simplified animation logic with guaranteed values
-            if (scrollPercentage < 0.33) { // Morning - sun rising from left
-                // Gradually move from below horizon (120%) to 70% top position
-                sunTopPosition = 120 - (scrollPercentage / 0.33) * 50;
-                sunLeftPosition = 10;
+            // Enhanced animation logic with distinct phases
+            if (scrollPercentage < 0.25) { // First phase: Sun rises vertically
+                // Gradually move from below horizon (120%) to 30% top position
+                // This means the sun rises completely before moving horizontally
+                sunTopPosition = 120 - (scrollPercentage / 0.25) * 90;
+                sunLeftPosition = 10; // Fixed position on left side during rising
                 sun.style.boxShadow = '0 0 70px rgba(255,177,71,0.8)';
-            } else if (scrollPercentage < 0.66) { // Noon - sun moves across sky
-                sunTopPosition = 70; // Keep at same height
-                // Map 0.33-0.66 range to 10-90% left position
-                const noonProgress = (scrollPercentage - 0.33) / 0.33; // 0 to 1
+            } else if (scrollPercentage < 0.7) { // Second phase: Sun moves across sky
+                sunTopPosition = 30; // Keep sun at peak position
+                // Map 0.25-0.7 range to 10-90% left position
+                const noonProgress = (scrollPercentage - 0.25) / 0.45; // 0 to 1
                 sunLeftPosition = 10 + noonProgress * 80;
                 sun.style.boxShadow = '0 0 100px rgba(255,177,71,0.9)';
-            } else { // Evening - sun setting to right
-                // Map 0.66-1.0 range to 70-120% top position (setting below horizon)
-                const eveningProgress = (scrollPercentage - 0.66) / 0.34; // 0 to 1
-                sunTopPosition = 70 + eveningProgress * 50;
-                sunLeftPosition = 90;
+            } else { // Final phase: Sun sets
+                // Map 0.7-1.0 range to 30-120% top position (setting below horizon)
+                const eveningProgress = (scrollPercentage - 0.7) / 0.3; // 0 to 1
+                sunTopPosition = 30 + eveningProgress * 90;
+                sunLeftPosition = 90; // Fixed position on right side during setting
                 sun.style.boxShadow = '0 0 70px rgba(255,177,71,0.8)';
             }
             
@@ -441,20 +442,21 @@
                 box-shadow: ${sun.style.boxShadow} !important;
             `;
             
-            // Moon animation (starts rising when sun sets)
+            // Moon animation (starts rising when sun begins to set)
             const moon = document.querySelector('.moon');
             if (!moon) return; // Safety check
             
             let moonTopPosition, moonOpacity;
             
-            if (scrollPercentage < 0.5) { // Morning/noon - moon not visible
+            if (scrollPercentage < 0.6) { // During day - moon not visible
                 moonTopPosition = 120; // Below horizon
                 moonOpacity = 0;
             } else { // Evening/night - moon rises
-                // Map 0.5-1.0 range to moon rise animation
-                const nightProgress = (scrollPercentage - 0.5) / 0.5; // 0 to 1
-                moonTopPosition = 120 - nightProgress * 100; // From 120% to 20%
-                moonOpacity = Math.min(nightProgress * 2, 1); // Gradually fade in
+                // Map 0.6-1.0 range to moon rise animation
+                // Start rising when sun begins to set
+                const nightProgress = (scrollPercentage - 0.6) / 0.4; // 0 to 1
+                moonTopPosition = 120 - nightProgress * 90; // From 120% to 30%
+                moonOpacity = Math.min(nightProgress * 1.5, 1); // Gradually fade in
             }
             
             // Apply styles with !important
