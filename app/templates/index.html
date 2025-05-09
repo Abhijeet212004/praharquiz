@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prahar Personality Quiz</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.5s ease, background-image 0.5s ease;
+            background-color: #243665; /* Deeper blue base for dawn */
+            background-image: linear-gradient(to top, #f7b05c 0%, #6e4e8e 35%, #243665 100%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+        
+        /* Sky elements */
+        .sky-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        /* Sun element */
+        .sun {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, rgba(255,244,179,1) 0%, rgba(255,177,71,1) 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 70px rgba(255,177,71,0.8);
+            left: 10%;
+            top: 120%;
+            transition: top 0.5s ease, left 0.5s ease, opacity 0.5s ease, box-shadow 0.5s ease;
+        }
+        
+        /* Moon element */
+        .moon {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(231,231,231,1) 0%, rgba(184,193,236,1) 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 50px rgba(184,193,236,0.8);
+            right: 10%;
+            top: 120%;
+            opacity: 0;
+            transition: top 0.5s ease, opacity 0.5s ease, box-shadow 0.5s ease;
+        }
+        
+        /* Cloud elements - More realistic with pseudo-elements */
+        .cloud {
+            position: absolute;
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.8s ease;
+        }
+        
+        .cloud-base {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50px;
+            position: relative;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        }
+        
+        .cloud-puff {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        }
+        
+        .cloud-1 {
+            width: 200px;
+            height: 80px;
+            left: 15%;
+            top: 15%;
+        }
+        
+        .cloud-2 {
+            width: 160px;
+            height: 60px;
+            right: 25%;
+            top: 10%;
+        }
+        
+        .cloud-3 {
+            width: 180px;
+            height: 70px;
+            left: 35%;
+            top: 20%;
+        }
+        
+        .cloud-4 {
+            width: 140px;
+            height: 50px;
+            left: 65%;
+            top: 18%;
+        }
+        
+        .cloud-5 {
+            width: 220px;
+            height: 65px;
+            left: 5%;
+            top: 8%;
+        }
+        
+        .cloud-6 {
+            width: 190px;
+            height: 55px;
+            right: 8%;
+            top: 5%;
+        }
+        
+        /* Star elements */
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            animation: twinkle 3s infinite alternate;
+            z-index: 0;
+        }
+        
+        /* Star with rays */
+        .star.with-rays::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(ellipse at center, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 60%);
+            z-index: -1;
+        }
+        
+        @keyframes twinkle {
+            0% {
+                opacity: 0.2;
+            }
+            100% {
+                opacity: 0.8;
+            }
+        }
+        
+        /* Generate 20 stars with random positions */
+        .stars-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        
+        /* Container for the quiz that creates a floating effect */
+        .container {
+            perspective: 1000px;
+        }
+        
+        .quiz-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            margin-top: 50px;
+            margin-bottom: 50px;
+            position: relative;
+            z-index: 2; /* Ensure quiz container is above celestial elements */
+            transition: box-shadow 0.5s ease;
+            overflow: hidden;
+            
+            /* Glassmorphism effect with higher opacity for better readability */
+            background: rgba(255, 255, 255, 0.9); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .quiz-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 30px;
+        }
+        .question-card {
+            margin-bottom: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+        .options-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .option-item {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .option-item:hover {
+            background-color: #e9ecef;
+        }
+        .option-item.selected {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .btn-submit {
+            display: block;
+            width: 200px;
+            margin: 30px auto 15px;
+            padding: 10px;
+        }
+        .result-container {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background-color: #e9f7fe;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .prahar-title {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #007bff;
+        }
+        .prahar-description {
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        .error-message {
+            color: #dc3545;
+            text-align: center;
+            display: none;
+            margin-top: 15px;
+        }
+        .progress {
+            height: 8px;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sky elements container -->
+    <div class="sky-container">
+        <div class="sun"></div>
+        <div class="moon"></div>
+        
+        <!-- More realistic clouds -->
+        <div class="cloud cloud-1">
+            <div class="cloud-base" style="width:100%; height:60%;"></div>
+            <div class="cloud-puff" style="width:45%; height:90%; top:-50%; left:10%;"></div>
+            <div class="cloud-puff" style="width:55%; height:100%; top:-60%; left:40%;"></div>
+            <div class="cloud-puff" style="width:40%; height:80%; top:-40%; right:10%;"></div>
+        </div>
+        
+        <div class="cloud cloud-2">
+            <div class="cloud-base" style="width:100%; height:50%;"></div>
+            <div class="cloud-puff" style="width:40%; height:80%; top:-40%; left:5%;"></div>
+            <div class="cloud-puff" style="width:50%; height:90%; top:-50%; left:35%;"></div>
+            <div class="cloud-puff" style="width:35%; height:70%; top:-30%; right:15%;"></div>
+        </div>
+        
+        <div class="cloud cloud-3">
+            <div class="cloud-base" style="width:100%; height:55%;"></div>
+            <div class="cloud-puff" style="width:50%; height:100%; top:-60%; left:0%;"></div>
+            <div class="cloud-puff" style="width:60%; height:110%; top:-70%; left:35%;"></div>
+            <div class="cloud-puff" style="width:45%; height:90%; top:-50%; right:5%;"></div>
+        </div>
+        
+        <div class="cloud cloud-4">
+            <div class="cloud-base" style="width:100%; height:45%;"></div>
+            <div class="cloud-puff" style="width:40%; height:80%; top:-40%; left:10%;"></div>
+            <div class="cloud-puff" style="width:50%; height:90%; top:-50%; left:40%;"></div>
+            <div class="cloud-puff" style="width:40%; height:70%; top:-35%; right:10%;"></div>
+        </div>
+        
+        <div class="cloud cloud-5">
+            <div class="cloud-base" style="width:100%; height:60%;"></div>
+            <div class="cloud-puff" style="width:50%; height:100%; top:-60%; left:5%;"></div>
+            <div class="cloud-puff" style="width:60%; height:110%; top:-70%; left:40%;"></div>
+            <div class="cloud-puff" style="width:45%; height:90%; top:-50%; right:5%;"></div>
+        </div>
+        
+        <div class="cloud cloud-6">
+            <div class="cloud-base" style="width:100%; height:50%;"></div>
+            <div class="cloud-puff" style="width:45%; height:90%; top:-50%; left:5%;"></div>
+            <div class="cloud-puff" style="width:55%; height:100%; top:-60%; left:35%;"></div>
+            <div class="cloud-puff" style="width:40%; height:80%; top:-40%; right:10%;"></div>
+        </div>
+        
+        <!-- Stars will be added dynamically -->
+    </div>
+    
+    <div class="container">
+        <div class="quiz-container">
+            <div class="quiz-header">
+                <h1>Prahar Personality Quiz</h1>
+                <p class="lead">Answer these 10 questions to discover which Prahar aligns with your personality</p>
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+            
+            <div id="quiz-content">
+                <!-- Questions will be loaded here -->
+            </div>
+            
+            <button id="btn-submit" class="btn btn-primary btn-submit" disabled>Submit Answers</button>
+            
+            <div id="loader" class="loader">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p>Analyzing your personality...</p>
+            </div>
+            
+            <div id="error-message" class="error-message">
+                <p>Something went wrong. Please try again.</p>
+            </div>
+            
+            <div id="result-container" class="result-container">
+                <h2>Your Result</h2>
+                <div class="prahar-title" id="prahar-title"></div>
+                <p class="prahar-description" id="prahar-description"></p>
+                <button id="btn-retake" class="btn btn-outline-primary mt-3">Retake Quiz</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Quiz state
+        const state = {
+            questions: [],
+            answers: Array(10).fill(null),
+            currentIndex: 0,
+            isSubmitting: false
+        };
+        
+        // Create stars dynamically
+        const starsContainer = document.createElement('div');
+        starsContainer.className = 'stars-container';
+        document.querySelector('.sky-container').appendChild(starsContainer);
+        
+        // Create stars with random positions
+        for (let i = 0; i < 50; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            if (Math.random() > 0.7) star.classList.add('with-rays'); // Some stars have rays
+            
+            const size = 1 + Math.random() * 3;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.top = `${Math.random() * 50}%`; // Stars mostly in upper half
+            star.style.animationDelay = `${Math.random() * 3}s`;
+            
+            starsContainer.appendChild(star);
+        }
+        
+        // Update sky elements based on scroll position
+        function updateSkyElements() {
+            const scrollPosition = window.scrollY;
+            const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollPercentage = scrollPosition / documentHeight;
+            
+            // Sun animation (starts below horizon, rises, then sets)
+            const sun = document.querySelector('.sun');
+            let sunTopPosition, sunLeftPosition;
+            
+            if (scrollPercentage < 0.33) { // Morning - sun rising from left
+                sunTopPosition = 120 - scrollPercentage * 3 * 150;
+                sunLeftPosition = 10;
+                sun.style.boxShadow = '0 0 70px rgba(255,177,71,0.8)';
+            } else if (scrollPercentage < 0.66) { // Noon - sun at top
+                sunTopPosition = 70;
+                sunLeftPosition = 10 + (scrollPercentage - 0.33) * 3 * 80;
+                sun.style.boxShadow = '0 0 100px rgba(255,177,71,0.9)';
+            } else { // Evening - sun setting to right
+                sunTopPosition = 70 + (scrollPercentage - 0.66) * 3 * 150;
+                sunLeftPosition = 90;
+                sun.style.boxShadow = '0 0 70px rgba(255,177,71,0.8)';
+            }
+            
+            sun.style.top = `${sunTopPosition}%`;
+            sun.style.left = `${sunLeftPosition}%`;
+            
+            // Moon animation (starts rising when sun sets)
+            const moon = document.querySelector('.moon');
+            let moonTopPosition, moonOpacity;
+            
+            if (scrollPercentage < 0.5) { // Morning/noon - moon not visible
+                moonTopPosition = 120;
+                moonOpacity = 0;
+            } else { // Evening/night - moon rises
+                moonTopPosition = 120 - (scrollPercentage - 0.5) * 2 * 100;
+                moonOpacity = (scrollPercentage - 0.5) * 2;
+            }
+            
+            moon.style.top = `${moonTopPosition}%`;
+            moon.style.opacity = moonOpacity;
+            
+            // Cloud animations - appear during day, fade at night
+            const clouds = document.querySelectorAll('.cloud');
+            let cloudOpacity;
+            
+            if (scrollPercentage < 0.2) { // Early morning - clouds forming
+                cloudOpacity = scrollPercentage * 5;
+            } else if (scrollPercentage < 0.7) { // Day - clouds visible
+                cloudOpacity = 1;
+            } else { // Evening/night - clouds fading
+                cloudOpacity = 1 - (scrollPercentage - 0.7) * 3.33;
+            }
+            
+            clouds.forEach((cloud, index) => {
+                cloud.style.opacity = cloudOpacity;
+                // Subtle horizontal movement for clouds
+                const moveX = Math.sin(scrollPercentage * Math.PI * 2 + index) * 5;
+                cloud.style.transform = `translateX(${moveX}px)`;
+            });
+            
+            // Stars animation - appear at night
+            const stars = document.querySelectorAll('.star');
+            let starOpacity;
+            
+            if (scrollPercentage < 0.5) { // Morning/noon - stars not visible
+                starOpacity = 0;
+            } else { // Evening/night - stars appear
+                starOpacity = (scrollPercentage - 0.5) * 2;
+            }
+            
+            stars.forEach(star => {
+                star.style.opacity = starOpacity;
+            });
+            
+            // Background colors - transition through day/night cycle
+            const body = document.body;
+            
+            if (scrollPercentage < 0.25) { // Dawn to morning
+                body.style.backgroundColor = '#243665';
+                body.style.backgroundImage = 'linear-gradient(to top, #f7b05c 0%, #6e4e8e 35%, #243665 100%)';
+            } else if (scrollPercentage < 0.5) { // Morning to noon
+                body.style.backgroundColor = '#1c7fee';
+                body.style.backgroundImage = 'linear-gradient(to top, #f8c254 0%, #90d0ff 35%, #1c7fee 100%)';
+            } else if (scrollPercentage < 0.75) { // Noon to evening
+                body.style.backgroundColor = '#5932be';
+                body.style.backgroundImage = 'linear-gradient(to top, #e65c00 0%, #8446bd 35%, #5932be 100%)';
+            } else { // Evening to night
+                body.style.backgroundColor = '#0f1642';
+                body.style.backgroundImage = 'linear-gradient(to top, #381c59 0%, #192052 35%, #0f1642 100%)';
+            }
+            
+            // Adjust quiz container shadow based on time of day
+            const quizContainer = document.querySelector('.quiz-container');
+            if (scrollPercentage < 0.5) { // Day
+                quizContainer.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+            } else { // Night
+                quizContainer.style.boxShadow = '0 8px 32px rgba(255, 255, 255, 0.08)';
+            }
+        }
+        
+        // Initialize sky elements
+        updateSkyElements();
+        
+        // Update sky elements on scroll
+        window.addEventListener('scroll', updateSkyElements);
+        
+        // DOM elements
+            const quizContent = document.getElementById('quiz-content');
+            const btnSubmit = document.getElementById('btn-submit');
+            const loader = document.getElementById('loader');
+            const errorMessage = document.getElementById('error-message');
+            const resultContainer = document.getElementById('result-container');
+            const praharTitle = document.getElementById('prahar-title');
+            const praharDescription = document.getElementById('prahar-description');
+            const btnRetake = document.getElementById('btn-retake');
+            const progressBar = document.querySelector('.progress-bar');
+            
+            // Fetch quiz questions from server
+            fetch('/quiz-data')
+                .then(response => response.json())
+                .then(data => {
+                    state.questions = data.questions;
+                    renderQuestions();
+                    updateProgress();
+                })
+                .catch(error => {
+                    console.error('Error fetching quiz data:', error);
+                    errorMessage.style.display = 'block';
+                });
+            
+            // Render all questions
+            function renderQuestions() {
+                quizContent.innerHTML = '';
+                
+                state.questions.forEach((question, index) => {
+                    const questionCard = document.createElement('div');
+                    questionCard.className = 'question-card';
+                    questionCard.id = `question-${index + 1}`;
+                    
+                    const questionTitle = document.createElement('h4');
+                    questionTitle.textContent = `${index + 1}. ${question.question}`;
+                    
+                    const optionsList = document.createElement('ul');
+                    optionsList.className = 'options-list';
+                    
+                    question.options.forEach((option, optionIndex) => {
+                        const optionItem = document.createElement('li');
+                        optionItem.className = 'option-item';
+                        optionItem.textContent = option;
+                        optionItem.dataset.questionIndex = index;
+                        optionItem.dataset.optionIndex = optionIndex;
+                        
+                        // Mark as selected if already answered
+                        if (state.answers[index] === optionIndex) {
+                            optionItem.classList.add('selected');
+                        }
+                        
+                        optionItem.addEventListener('click', handleOptionClick);
+                        optionsList.appendChild(optionItem);
+                    });
+                    
+                    questionCard.appendChild(questionTitle);
+                    questionCard.appendChild(optionsList);
+                    quizContent.appendChild(questionCard);
+                });
+            }
+            
+            // Handle option click
+            function handleOptionClick(event) {
+                const questionIndex = parseInt(event.target.dataset.questionIndex);
+                const optionIndex = parseInt(event.target.dataset.optionIndex);
+                
+                // Update selected option UI
+                const allOptions = document.querySelectorAll(`#question-${questionIndex + 1} .option-item`);
+                allOptions.forEach(option => option.classList.remove('selected'));
+                event.target.classList.add('selected');
+                
+                // Update answers array
+                state.answers[questionIndex] = optionIndex;
+                
+                // Check if all questions answered
+                const allAnswered = state.answers.every(answer => answer !== null);
+                btnSubmit.disabled = !allAnswered;
+                
+                updateProgress();
+            }
+            
+            // Update progress bar
+            function updateProgress() {
+                const answered = state.answers.filter(answer => answer !== null).length;
+                const percentage = (answered / state.questions.length) * 100;
+                progressBar.style.width = `${percentage}%`;
+                progressBar.setAttribute('aria-valuenow', percentage);
+            }
+            
+            // Handle form submission
+            btnSubmit.addEventListener('click', function() {
+                // Show loader
+                quizContent.style.display = 'none';
+                btnSubmit.style.display = 'none';
+                loader.style.display = 'block';
+                
+                // Submit answers to server
+                fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ answers: state.answers }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loader
+                    loader.style.display = 'none';
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Show result
+                    praharTitle.textContent = data.prahar_name;
+                    praharDescription.textContent = data.description;
+                    resultContainer.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loader.style.display = 'none';
+                    errorMessage.style.display = 'block';
+                });
+            });
+            
+            // Retake quiz
+            btnRetake.addEventListener('click', function() {
+                // Reset state
+                state.answers = Array(10).fill(null);
+                state.currentIndex = 0;
+                
+                // Reset UI
+                errorMessage.style.display = 'none';
+                resultContainer.style.display = 'none';
+                quizContent.style.display = 'block';
+                btnSubmit.style.display = 'block';
+                btnSubmit.disabled = true;
+                
+                // Rerender questions
+                renderQuestions();
+                updateProgress();
+            });
+        });
+    </script>
+</body>
+</html> 
