@@ -28,11 +28,14 @@
             z-index: -1;
             overflow: hidden;
             pointer-events: none;
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: block !important;
         }
         
         /* Sun element */
         .sun {
-            position: absolute;
+            position: fixed;
             width: 120px;
             height: 120px;
             background: radial-gradient(circle, rgba(255,244,179,1) 0%, rgba(255,177,71,1) 100%);
@@ -41,11 +44,12 @@
             left: 10%;
             top: 120%;
             transition: top 0.5s ease, left 0.5s ease, opacity 0.5s ease, box-shadow 0.5s ease;
+            z-index: -1; /* Ensure proper stacking order */
         }
         
         /* Moon element */
         .moon {
-            position: absolute;
+            position: fixed;
             width: 100px;
             height: 100px;
             background: radial-gradient(circle, rgba(231,231,231,1) 0%, rgba(184,193,236,1) 100%);
@@ -55,13 +59,16 @@
             top: 120%;
             opacity: 0;
             transition: top 0.5s ease, opacity 0.5s ease, box-shadow 0.5s ease;
+            z-index: -1; /* Ensure proper stacking order */
         }
         
         /* Cloud elements - More realistic with pseudo-elements */
         .cloud {
-            position: absolute;
+            position: fixed;
             opacity: 0;
             transition: opacity 0.5s ease, transform 0.8s ease;
+            z-index: -1;
+            visibility: visible !important;
         }
         
         .cloud-base {
@@ -380,45 +387,82 @@
         
         // Update sky elements based on scroll position
         function updateSkyElements() {
-            const scrollPosition = window.scrollY;
-            const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const scrollPercentage = scrollPosition / documentHeight;
+            // Use a safer way to calculate scroll percentage
+            const scrollPosition = window.scrollY || window.pageYOffset;
+            const windowHeight = window.innerHeight;
+            const documentHeight = Math.max(
+                document.body.scrollHeight, 
+                document.documentElement.scrollHeight,
+                document.body.offsetHeight, 
+                document.documentElement.offsetHeight
+            ) - windowHeight;
+            
+            // Protect against division by zero or negative values
+            let scrollPercentage = 0;
+            if (documentHeight > 0) {
+                scrollPercentage = Math.min(Math.max(scrollPosition / documentHeight, 0), 1);
+            }
+            
+            // For debugging - add a visual indicator of scroll percentage
+            console.log(`Scroll: ${scrollPercentage.toFixed(2)}`);
             
             // Sun animation (starts below horizon, rises, then sets)
             const sun = document.querySelector('.sun');
+            if (!sun) return; // Safety check
+            
             let sunTopPosition, sunLeftPosition;
             
+            // Simplified animation logic with guaranteed values
             if (scrollPercentage < 0.33) { // Morning - sun rising from left
-                sunTopPosition = 120 - scrollPercentage * 3 * 150;
+                // Gradually move from below horizon (120%) to 70% top position
+                sunTopPosition = 120 - (scrollPercentage / 0.33) * 50;
                 sunLeftPosition = 10;
                 sun.style.boxShadow = '0 0 70px rgba(255,177,71,0.8)';
-            } else if (scrollPercentage < 0.66) { // Noon - sun at top
-                sunTopPosition = 70;
-                sunLeftPosition = 10 + (scrollPercentage - 0.33) * 3 * 80;
+            } else if (scrollPercentage < 0.66) { // Noon - sun moves across sky
+                sunTopPosition = 70; // Keep at same height
+                // Map 0.33-0.66 range to 10-90% left position
+                const noonProgress = (scrollPercentage - 0.33) / 0.33; // 0 to 1
+                sunLeftPosition = 10 + noonProgress * 80;
                 sun.style.boxShadow = '0 0 100px rgba(255,177,71,0.9)';
             } else { // Evening - sun setting to right
-                sunTopPosition = 70 + (scrollPercentage - 0.66) * 3 * 150;
+                // Map 0.66-1.0 range to 70-120% top position (setting below horizon)
+                const eveningProgress = (scrollPercentage - 0.66) / 0.34; // 0 to 1
+                sunTopPosition = 70 + eveningProgress * 50;
                 sunLeftPosition = 90;
                 sun.style.boxShadow = '0 0 70px rgba(255,177,71,0.8)';
             }
             
-            sun.style.top = `${sunTopPosition}%`;
-            sun.style.left = `${sunLeftPosition}%`;
+            // Apply styles with !important to override any potential CSS conflicts
+            sun.style.cssText = `
+                top: ${sunTopPosition}% !important;
+                left: ${sunLeftPosition}% !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                box-shadow: ${sun.style.boxShadow} !important;
+            `;
             
             // Moon animation (starts rising when sun sets)
             const moon = document.querySelector('.moon');
+            if (!moon) return; // Safety check
+            
             let moonTopPosition, moonOpacity;
             
             if (scrollPercentage < 0.5) { // Morning/noon - moon not visible
-                moonTopPosition = 120;
+                moonTopPosition = 120; // Below horizon
                 moonOpacity = 0;
             } else { // Evening/night - moon rises
-                moonTopPosition = 120 - (scrollPercentage - 0.5) * 2 * 100;
-                moonOpacity = (scrollPercentage - 0.5) * 2;
+                // Map 0.5-1.0 range to moon rise animation
+                const nightProgress = (scrollPercentage - 0.5) / 0.5; // 0 to 1
+                moonTopPosition = 120 - nightProgress * 100; // From 120% to 20%
+                moonOpacity = Math.min(nightProgress * 2, 1); // Gradually fade in
             }
             
-            moon.style.top = `${moonTopPosition}%`;
-            moon.style.opacity = moonOpacity;
+            // Apply styles with !important
+            moon.style.cssText = `
+                top: ${moonTopPosition}% !important;
+                opacity: ${moonOpacity} !important;
+                visibility: visible !important;
+            `;
             
             // Cloud animations - appear during day, fade at night
             const clouds = document.querySelectorAll('.cloud');
@@ -484,6 +528,17 @@
         
         // Update sky elements on scroll
         window.addEventListener('scroll', updateSkyElements);
+        
+        // Repeatedly check and update sky elements to ensure they're visible
+        // This helps on some browsers and mobile devices where scroll events may not fire consistently
+        const animationInterval = setInterval(updateSkyElements, 1000);
+        
+        // Also update on window resize
+        window.addEventListener('resize', updateSkyElements);
+        
+        // Force initial update after a short delay (helps with page load timing issues)
+        setTimeout(updateSkyElements, 500);
+        setTimeout(updateSkyElements, 1500);
         
         // DOM elements
             const quizContent = document.getElementById('quiz-content');
